@@ -18,8 +18,8 @@ app.get('/api/inventory', async (req, res) => {
         const allInventory = await pool.query("SELECT * FROM hub_inv");
         res.json(allInventory.rows);
     } catch (err) {
-        console.error("Full Error Stack:", err.stack); // Log the full error stack
-        res.status(500).json({ error: err.message });
+        console.error("Error:", err);
+        res.status(500).json({ error: JSON.stringify(err, Object.getOwnPropertyNames(err)) });
     }
 });
 
