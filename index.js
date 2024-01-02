@@ -18,8 +18,17 @@ app.get('/api/inventory', async (req, res) => {
         const allInventory = await pool.query("SELECT * FROM hub_inv");
         res.json(allInventory.rows);
     } catch (err) {
-        console.error("Error object:", err); // Log the full error object
-        res.status(500).json({ error: err.toString() }); // Send a string representation of the error
+        console.error("Error Type:", err.constructor.name);
+        if (err instanceof AggregateError) {
+            // Log individual errors from the AggregateError
+            for (const individualError of err.errors) {
+                console.error("Individual error:", individualError);
+            }
+        } else {
+            // Log the full error object for other error types
+            console.error("Error object:", err);
+        }
+        res.status(500).json({ error: err.toString() });
     }
 });
 
