@@ -18,8 +18,8 @@ app.get('/api/inventory', async (req, res) => {
         const allInventory = await pool.query("SELECT * FROM hub_inv");
         res.json(allInventory.rows);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send("Server error");
+        console.error("Detailed Error: ", err); // Log the full error
+        res.status(500).json({ error: err.message }); // Send error details in response
     }
 });
 
