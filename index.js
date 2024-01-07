@@ -209,37 +209,52 @@ app.post('/api/inventory/return', async (req, res) => {
     }
 });
 
-// To validate the received data, check inventory availability, and update the database accordingly.
 app.post('/api/excel-update', async (req, res) => {
     try {
+        console.log("Received data:", req.body);
+
+        // Destructure the received data
         const {
             ID,
-            'Completion time': completion_time,
-            Email: email,
-            Name: name,
-            'Item name 1': item_name_1,
-            'Quantity 1': quantity_1,
-            'Item name 2': item_name_2,
-            'Quantity 2': quantity_2,
-            'Item name 3': item_name_3,
-            'Quantity 3': quantity_3,
-            'Item name 4': item_name_4,
-            'Quantity 4': quantity_4,
-            'Item name 5': item_name_5,
-            'Quantity 5': quantity_5,
-            'Matric or Staff No (starting with A)': matric_or_staff_no,
-            'Project title': project_title,
-            'Project Code': project_code,
-            'Phone number (without +65)': phone_number,
-            'Start usage date': start_usage_date,
-            'End Usage Date': end_usage_date,
-            'Location of Usage': location_of_usage,
-            'Purpose of Usage': purpose_of_usage,
-            'Name of Project Supervisor': project_supervisor_name,
-            'Email of Supervisor': supervisor_email,
-            'Additional Remarks': additional_remarks
+            completion_time,
+            email,
+            name,
+            item_name_1,
+            quantity_1,
+            item_name_2,
+            quantity_2,
+            item_name_3,
+            quantity_3,
+            item_name_4,
+            quantity_4,
+            item_name_5,
+            quantity_5,
+            matric_or_staff_no,
+            project_title,
+            project_code,
+            phone_number,
+            start_usage_date,
+            end_usage_date,
+            location_of_usage,
+            purpose_of_usage,
+            project_supervisor_name,
+            supervisor_email,
+            additional_remarks
         } = req.body;
 
+        // Convert quantities from string to integer
+        const convertedQuantity1 = parseInt(quantity_1) || 0;
+        const convertedQuantity2 = quantity_2 ? parseInt(quantity_2) : null;
+        const convertedQuantity3 = quantity_3 ? parseInt(quantity_3) : null;
+        const convertedQuantity4 = quantity_4 ? parseInt(quantity_4) : null;
+        const convertedQuantity5 = quantity_5 ? parseInt(quantity_5) : null;
+
+        // Process date fields
+        const processedCompletionTime = completion_time ? new Date(completion_time).toISOString() : null;
+        const processedStartDate = start_usage_date ? new Date(start_usage_date).toISOString().split('T')[0] : null;
+        const processedEndDate = end_usage_date ? new Date(end_usage_date).toISOString().split('T')[0] : null;
+
+        // Prepare SQL query and values
         const query = `
             INSERT INTO form_responses 
             (ID, completion_time, email, name, item_name_1, quantity_1, 
@@ -279,11 +294,11 @@ app.post('/api/excel-update', async (req, res) => {
         `;
 
         const values = [
-            ID, completion_time, email, name, item_name_1, quantity_1,
-            item_name_2, quantity_2, item_name_3, quantity_3,
-            item_name_4, quantity_4, item_name_5, quantity_5,
+            ID, processedCompletionTime, email, name, item_name_1, convertedQuantity1,
+            item_name_2, convertedQuantity2, item_name_3, convertedQuantity3,
+            item_name_4, convertedQuantity4, item_name_5, convertedQuantity5,
             matric_or_staff_no, project_title, project_code,
-            phone_number, start_usage_date, end_usage_date,
+            phone_number, processedStartDate, processedEndDate,
             location_of_usage, purpose_of_usage, project_supervisor_name,
             supervisor_email, additional_remarks
         ];
@@ -296,6 +311,7 @@ app.post('/api/excel-update', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
 
 
 
