@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require("express");
 const path = require('path');
 const app = express();
@@ -209,10 +211,9 @@ app.post('/api/inventory/return', async (req, res) => {
     }
 });
 
+// To validate the received data, check inventory availability, and update the database accordingly.
 app.post('/api/excel-update', async (req, res) => {
     try {
-        console.log("Received data:", req.body);
-
         // Destructure the received data
         const {
             ID,
@@ -305,7 +306,94 @@ app.post('/api/excel-update', async (req, res) => {
 
         await pool.query(query, values);
 
+        // Start updating hub_items and creating transaction records
+        await pool.query('BEGIN');
+
+        // Iterate through each item and update hub_items
+        for (let i = 1; i <= 5; i++) {
+            const itemNameInput = req.body[`item_name_${i}`];
+            const quantity = parseInt(req.body[`quantity_${i}`]) || 0;
+
+            if (itemNameInput && quantity > 0) {
+                const itemNameLower = itemNameInput.toLowerCase();
+
+                // Find the item_id for the given item name (case-insensitive)
+                const itemResult = await pool.query(
+                    'SELECT item_id FROM hub_items WHERE LOWER(item_name) = LOWER($1)',
+                    [itemNameLower]
+                );
+
+                if (itemResult.rows.length > 0) {
+                    const itemId = itemResult.rows[0].item_id;
+
+                    // Update qty_available and qty_reserved for the found item
+                    await pool.query(
+                        'UPDATE hub_items SET qty_available = qty_available - $1, qty_reserved = qty_reserved + $1 WHERE item_id = $2',
+                        [quantity, itemId]
+                    );
+                } else {
+                    // Handle the case where the item is not found
+                    console.log(`Item not found: ${itemNameInput}`);
+                    // Insert this incident into a 'log' table in your database
+                    await pool.query('INSERT INTO item_lookup_errors (input_name, timestamp) VALUES ($1, NOW())', [itemNameInput]);
+                }
+            }
+        }
+
+        // Check if student exists
+        let studentId;
+        const studentResult = await pool.query('SELECT student_id FROM students WHERE email = $1', [email]);
+        if (studentResult.rows.length > 0) {
+            studentId = studentResult.rows[0].student_id;
+        } else {
+            // Insert new student and get student_id
+            const newStudentResult = await pool.query(
+                'INSERT INTO students (name, email, phone_number) VALUES ($1, $2, $3) RETURNING student_id',
+                [name, email, phone_number]
+            );
+            studentId = newStudentResult.rows[0].student_id;
+        }
+
+        // Check if supervisor exists
+        let supervisorId;
+        const supervisorResult = await pool.query('SELECT supervisor_id FROM supervisors WHERE email = $1', [supervisor_email]);
+        if (supervisorResult.rows.length > 0) {
+            supervisorId = supervisorResult.rows[0].supervisor_id;
+        } else {
+            // Insert new supervisor and get supervisor_id
+            const newSupervisorResult = await pool.query(
+                'INSERT INTO supervisors (name, email) VALUES ($1, $2) RETURNING supervisor_id',
+                [project_supervisor_name, supervisor_email]
+            );
+            supervisorId = newSupervisorResult.rows[0].supervisor_id;
+        }
+
+        await pool.query('COMMIT'); // Commit the transaction here
         res.status(200).json({ message: 'Data inserted successfully' });
+    } catch (err) {
+        await pool.query('ROLLBACK'); // Rollback in case of an error
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+});
+
+// To insert student data into the database
+app.post('/api/insert-students', async (req, res) => {
+    try {
+        // Destructure the received data
+        const { name, email, phone_number, matric_no } = req.body;
+
+        // Check if the student already exists by matric_no
+        const existingStudent = await pool.query('SELECT student_id FROM students WHERE matric_no = $1', [matric_no]);
+
+        if (existingStudent.rows.length === 0) {
+            // If the student does not exist, insert them into the database
+            await pool.query('INSERT INTO students (name, email, phone_number, matric_no) VALUES ($1, $2, $3, $4)', [name, email, phone_number, matric_no]);
+            res.status(200).json({ message: 'Student data processed successfully' });
+        } else {
+            // If a student with the same matric_no exists, respond accordingly
+            res.status(200).json({ message: 'Student with this matriculation number already exists' });
+        }
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server error');
@@ -313,7 +401,31 @@ app.post('/api/excel-update', async (req, res) => {
 });
 
 
+// To retrieve the student ID of a student using their matric number
+app.get('/api/get-student-id', async (req, res) => {
+    try {
+        const matricNo = req.query.matric_no; // Get matric_no from query parameters
 
+        if (!matricNo) {
+            return res.status(400).json({ message: "Matric number is required" });
+        }
+
+        // Query the database to find the student_id by matric_no
+        const studentResult = await pool.query('SELECT student_id FROM students WHERE matric_no = $1', [matricNo]);
+
+        if (studentResult.rows.length > 0) {
+            // Student found, return the student_id
+            const studentId = studentResult.rows[0].student_id;
+            res.json({ student_id: studentId });
+        } else {
+            // Student not found
+            res.status(404).json({ message: "Student not found" });
+        }
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+});
 
 
 app.listen(PORT, () => {
