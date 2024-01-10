@@ -428,6 +428,6 @@ app.get('/api/get-student-id', async (req, res) => {
 });
 
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`server has started on port ${PORT}`);
 })
