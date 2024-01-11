@@ -11,15 +11,6 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from the React frontend app
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, 'client/build')));
-
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname + '/client/build/index.html'));
-    });
-}
-
 // ROUTES //
 
 // For retrieving a list of all the inventory items
