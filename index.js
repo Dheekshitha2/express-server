@@ -439,7 +439,7 @@ app.post('/api/loan-items/add', async (req, res) => {
         // Send back the inserted student data
         res.json(newStudent.rows[0]);
     } catch (err) {
-        console.error(err.message);
+        console.error(err.stack);
         res.status(500).send("Server error");
     }
 });
