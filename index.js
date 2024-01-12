@@ -423,17 +423,17 @@ app.get('/api/get-student-id', async (req, res) => {
 app.post('/api/loan-transaction/add', async (req, res) => {
     try {
         // Destructure the required data from the request body
-        const { start_usage_date, end_usage_date, status, matric_no } = req.body;
+        const { student_id, start_usage_date, end_usage_date, status, matric_no } = req.body;
 
         // Basic validation to check if all required fields are present
-        if (!start_usage_date || !end_usage_date || !status || !matric_no) {
+        if (!student_id || !start_usage_date || !end_usage_date || !status || !matric_no) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
         // Insert the new student data into the students table
         const newStudent = await pool.query(
-            "INSERT INTO loan_transaction (start_usage_date, end_usage_date, status, matric_no) VALUES ($1, $2, $3, $4) RETURNING *",
-            [start_usage_date, end_usage_date, status, matric_no]
+            "INSERT INTO loan_transaction (student_id, start_usage_date, end_usage_date, status, matric_no) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+            [student_id, start_usage_date, end_usage_date, status, matric_no]
         );
 
         // Send back the inserted student data
