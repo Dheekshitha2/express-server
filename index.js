@@ -432,7 +432,7 @@ app.post('/api/loan-items/add', async (req, res) => {
 
         // Insert the new student data into the students table
         const newStudent = await pool.query(
-            "INSERT INTO loan_items (start_usage_date, end_usage_date, status, matric_no) VALUES ($1, $2, $3, $4) RETURNING *",
+            "INSERT INTO loan_transaction (start_usage_date, end_usage_date, status, matric_no) VALUES ($1, $2, $3, $4) RETURNING *",
             [start_usage_date, end_usage_date, status, matric_no]
         );
 
