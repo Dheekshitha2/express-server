@@ -419,6 +419,32 @@ app.get('/api/get-student-id', async (req, res) => {
 });
 
 
+// Endpoint for adding a new student
+app.post('/api/students/add', async (req, res) => {
+    try {
+        // Destructure the required data from the request body
+        const { start_usage_date, end_usage_date, status, matric_no } = req.body;
+
+        // Basic validation to check if all required fields are present
+        if (!start_usage_date || !end_usage_date || !status || !matric_no) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // Insert the new student data into the students table
+        const newStudent = await pool.query(
+            "INSERT INTO students (start_usage_date, end_usage_date, status, matric_no) VALUES ($1, $2, $3, $4) RETURNING *",
+            [start_usage_date, end_usage_date, status, matric_no]
+        );
+
+        // Send back the inserted student data
+        res.json(newStudent.rows[0]);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Server error");
+    }
+});
+
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`server has started on port ${PORT}`);
 })
