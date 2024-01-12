@@ -420,7 +420,7 @@ app.get('/api/get-student-id', async (req, res) => {
 
 
 // Endpoint for adding a new student
-app.post('/api/loan-items/add', async (req, res) => {
+app.post('/api/loan-transaction/add', async (req, res) => {
     try {
         // Destructure the required data from the request body
         const { start_usage_date, end_usage_date, status, matric_no } = req.body;
