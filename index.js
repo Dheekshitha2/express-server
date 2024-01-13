@@ -456,6 +456,9 @@ app.post('/api/submit-form', async (req, res) => {
             additional_remarks, selectedItems
         } = req.body;
 
+
+        console.log("selectedItems", selectedItems);
+
         // Prepare the data for Power Automate
         const formData = {
             completion_time: new Date().toISOString(),
@@ -464,11 +467,11 @@ app.post('/api/submit-form', async (req, res) => {
             purpose_of_usage, project_supervisor_name, supervisor_email,
             additional_remarks,
             // Assuming 'selectedItems' is an array of objects with 'item_name' and 'quantity'
-            ...selectedItems.reduce((acc, item, index) => {
+            selectedItems: Array.isArray(selectedItems) ? selectedItems.reduce((acc, item, index) => {
                 acc[`item_name_${index + 1}`] = item.item_name;
                 acc[`quantity_${index + 1}`] = item.quantity;
                 return acc;
-            }, {})
+            }, {}) : {}
         };
 
         // Forward the data to Power Automate
