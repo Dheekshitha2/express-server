@@ -7,6 +7,9 @@ const cors = require("cors");
 const pool = require("./database/db");
 const PORT = process.env.PORT || 5000;
 
+const axios = require('axios');
+const POWER_AUTOMATE_URL = 'https://prod-38.southeastasia.logic.azure.com:443/workflows/c84d30f1f09a4a508d19460c586eb699/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iEx2kAsMLbNfEaMAIn6_rhJhtNq1yQ868rnFvmqouP8';
+
 // middleware
 app.use(cors());
 app.use(express.json());
@@ -441,6 +444,40 @@ app.post('/api/loan-transaction/add', async (req, res) => {
     } catch (err) {
         console.error(err.stack);
         res.status(500).send("Server error");
+    }
+});
+
+app.post('/api/submit-form', async (req, res) => {
+    try {
+        const {
+            email, name, matric_or_staff_no, project_title, project_code,
+            phone_number, start_usage_date, end_usage_date, location_of_usage,
+            purpose_of_usage, project_supervisor_name, supervisor_email,
+            additional_remarks, selectedItems
+        } = req.body;
+
+        // Prepare the data for Power Automate
+        const formData = {
+            completion_time: new Date().toISOString(),
+            email, name, matric_or_staff_no, project_title, project_code,
+            phone_number, start_usage_date, end_usage_date, location_of_usage,
+            purpose_of_usage, project_supervisor_name, supervisor_email,
+            additional_remarks,
+            // Assuming 'selectedItems' is an array of objects with 'item_name' and 'quantity'
+            ...selectedItems.reduce((acc, item, index) => {
+                acc[`item_name_${index + 1}`] = item.item_name;
+                acc[`quantity_${index + 1}`] = item.quantity;
+                return acc;
+            }, {})
+        };
+
+        // Forward the data to Power Automate
+        const powerAutomateResponse = await axios.post(POWER_AUTOMATE_URL, formData);
+
+        res.status(200).json({ message: 'Form data submitted successfully', powerAutomateResponse: powerAutomateResponse.data });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
     }
 });
 
