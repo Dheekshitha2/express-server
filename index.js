@@ -466,12 +466,17 @@ app.post('/api/submit-form', async (req, res) => {
             additional_remarks
         };
 
-        // Process flattened item data from req.body
         Object.keys(req.body).forEach(key => {
             if (key.startsWith('item_name_') || key.startsWith('quantity_')) {
-                formData[key] = req.body[key];
+                // Convert quantities to string if they are not already
+                if (key.startsWith('quantity_')) {
+                    formData[key] = String(req.body[key]);
+                } else {
+                    formData[key] = req.body[key];
+                }
             }
         });
+
 
         // Forward the data to Power Automate
         const powerAutomateResponse = await axios.post(POWER_AUTOMATE_URL, formData);
