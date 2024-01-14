@@ -469,7 +469,7 @@ app.post('/api/submit-form', async (req, res) => {
             // Assuming 'selectedItems' is an array of objects with 'item_name' and 'quantity'
             selectedItems: Array.isArray(selectedItems) ? selectedItems.reduce((acc, item, index) => {
                 acc[`item_name_${index + 1}`] = item.item_name;
-                acc[`quantity_${index + 1}`] = item.quantity;
+                acc[`quantity_${index + 1}`] = item.qty_borrowed;
                 return acc;
             }, {}) : {}
         };
