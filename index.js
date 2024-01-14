@@ -478,7 +478,7 @@ app.post('/api/submit-form', async (req, res) => {
 
         res.status(200).json({ message: 'Form data submitted successfully', powerAutomateResponse: powerAutomateResponse.data });
     } catch (err) {
-        console.error(err.message);
+        console.error("Error occurred:", err);
         res.status(500).send('Server error');
     }
 });
