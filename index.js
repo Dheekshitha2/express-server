@@ -449,30 +449,29 @@ app.post('/api/loan-transaction/add', async (req, res) => {
 
 app.post('/api/submit-form', async (req, res) => {
     try {
+        // Destructure the main fields from req.body
         const {
             email, name, matric_or_staff_no, project_title, project_code,
             phone_number, start_usage_date, end_usage_date, location_of_usage,
             purpose_of_usage, project_supervisor_name, supervisor_email,
-            additional_remarks, selectedItems
+            additional_remarks
         } = req.body;
 
-
-        console.log("selectedItems", selectedItems);
-
         // Prepare the data for Power Automate
-        const formData = {
+        let formData = {
             completion_time: new Date().toISOString(),
             email, name, matric_or_staff_no, project_title, project_code,
             phone_number, start_usage_date, end_usage_date, location_of_usage,
             purpose_of_usage, project_supervisor_name, supervisor_email,
-            additional_remarks,
-            // Assuming 'selectedItems' is an array of objects with 'item_name' and 'quantity'
-            selectedItems: Array.isArray(selectedItems) ? selectedItems.reduce((acc, item, index) => {
-                acc[`item_name_${index + 1}`] = item.item_name;
-                acc[`quantity_${index + 1}`] = item.qty_borrowed;
-                return acc;
-            }, {}) : {}
+            additional_remarks
         };
+
+        // Process flattened item data from req.body
+        Object.keys(req.body).forEach(key => {
+            if (key.startsWith('item_name_') || key.startsWith('quantity_')) {
+                formData[key] = req.body[key];
+            }
+        });
 
         // Forward the data to Power Automate
         const powerAutomateResponse = await axios.post(POWER_AUTOMATE_URL, formData);
@@ -483,6 +482,7 @@ app.post('/api/submit-form', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
 
 
 app.listen(PORT, '0.0.0.0', () => {
