@@ -447,6 +447,23 @@ app.post('/api/loan-transaction/add', async (req, res) => {
     }
 });
 
+const formatDate = (date) => {
+    const pad = (num) => num < 10 ? '0' + num : num.toString();
+
+    // Convert to Singapore Time (GMT+8)
+    const sgTimeOffset = 8 * 60; // offset in minutes
+    date.setMinutes(date.getMinutes() + date.getTimezoneOffset() + sgTimeOffset);
+
+    const month = pad(date.getMonth() + 1); // getMonth() is zero-based
+    const day = pad(date.getDate());
+    const year = date.getFullYear().toString().substr(-2); // last two digits of the year
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const seconds = pad(date.getSeconds());
+
+    return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
+};
+
 app.post('/api/submit-form', async (req, res) => {
     try {
         // Destructure the main fields from req.body
@@ -459,7 +476,7 @@ app.post('/api/submit-form', async (req, res) => {
 
         // Prepare the data for Power Automate
         let formData = {
-            completion_time: new Date().toISOString(),
+            completion_time: formatDate(new Date()), // Use formatDate function here
             email, name, matric_or_staff_no, project_title, project_code,
             phone_number, start_usage_date, end_usage_date, location_of_usage,
             purpose_of_usage, project_supervisor_name, supervisor_email,
@@ -476,8 +493,6 @@ app.post('/api/submit-form', async (req, res) => {
                 }
             }
         });
-
-
         // Forward the data to Power Automate
         const powerAutomateResponse = await axios.post(POWER_AUTOMATE_URL, formData);
 
