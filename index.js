@@ -19,7 +19,7 @@ app.use(express.json());
 // For retrieving a list of all the inventory items
 app.get('/api/inventory', async (req, res) => {
     try {
-        const allInventory = await pool.query("SELECT * FROM hub_items");
+        const allInventory = await pool.query("SELECT * FROM hub_items_new"); //changed table name
         res.json(allInventory.rows);
     } catch (err) {
         console.error(err.message);
