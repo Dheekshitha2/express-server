@@ -421,6 +421,33 @@ app.get('/api/get-student-id', async (req, res) => {
     }
 });
 
+// To retrieve the transaction ID using the student's matric number
+app.get('/api/get-transaction-id', async (req, res) => {
+    try {
+        const matricNo = req.query.matric_no; // Get matric_no from query parameters
+
+        if (!matricNo) {
+            return res.status(400).json({ message: "Matric number is required" });
+        }
+
+        // Query the database to find the transaction_id by matric_no
+        const transactionResult = await pool.query('SELECT transaction_id FROM loan_transaction WHERE matric_no = $1', [matricNo]);
+
+        if (transactionResult.rows.length > 0) {
+            // Transaction found, return the transaction_id
+            const transId = transactionResult.rows[0].transaction_id;
+            res.json({ transaction_id: transId });
+        } else {
+            // Transaction not found
+            res.status(404).json({ message: "Transaction not found" });
+        }
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+});
+
+
 
 // Endpoint for adding a new student
 app.post('/api/loan-transaction/add', async (req, res) => {
