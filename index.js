@@ -35,7 +35,7 @@ app.get('/api/inventory/:item_id', async (req, res) => {
 
         // Perform a SELECT operation in the database using provided ID
         const item = await pool.query(
-            "SELECT * FROM hub_items WHERE item_id = $1", [item_id]
+            "SELECT * FROM hub_items_new WHERE item_id = $1", [item_id]
         );
 
         // Check if the item was found
