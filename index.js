@@ -533,6 +533,7 @@ app.post('/api/submit-form', async (req, res) => {
 // To insert inventory items update from excel to supabase
 app.post('/api/import-excel-data', async (req, res) => {
     const data = req.body; // Assuming the body contains an array of records from Excel
+    console.log(data); // Log the received data
 
     try {
         const client = await pool.connect();
