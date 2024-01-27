@@ -531,25 +531,50 @@ app.post('/api/submit-form', async (req, res) => {
 });
 
 // To insert inventory items update from excel to supabase
-app.post('/api/insert-excel-data', async (req, res) => {
+app.post('/api/import-excel-data', async (req, res) => {
+    const data = req.body; // Assuming the body contains an array of records from Excel
+
     try {
-        const {
-            ItemID, ItemName, Brand, Model, AssetNumber, SerialNo, SizeSpecs,
-            TotalQty, QtyAvailable, QtyReserved, QtyBorrowed, Others, Location, Category, Loanable
-        } = req.body;
+        const client = await pool.connect();
 
-        // Insert data into Supabase. Assume `pool` is your connection to Supabase.
-        const result = await pool.query(`
-            INSERT INTO hub_items_new
-            (item_id, item_name, brand, model, asset_number, serial_no, size_specs,
-            total_qty, qty_available, qty_reserved, qty_borrowed, others, location, category, loanable)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-        `, [ItemID, ItemName, Brand, Model, AssetNumber, SerialNo, SizeSpecs, TotalQty, QtyAvailable, QtyReserved, QtyBorrowed, Others, Location, Category, Loanable]);
+        // Begin transaction
+        await client.query('BEGIN');
 
-        res.status(200).json({ message: 'Data inserted successfully' });
+        for (const record of data) {
+            // Construct and execute the SQL query for each record
+            await client.query(`
+                INSERT INTO your_table_name
+                (item_id, item_name, brand, model, asset_number, serial_no, size_specs, total_qty, qty_available, qty_reserved, qty_borrowed, others, location, category)
+                VALUES
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                ON CONFLICT (item_id)
+                DO UPDATE SET
+                item_name = EXCLUDED.item_name,
+                brand = EXCLUDED.brand,
+                model = EXCLUDED.model,
+                asset_number = EXCLUDED.asset_number,
+                serial_no = EXCLUDED.serial_no,
+                size_specs = EXCLUDED.size_specs,
+                total_qty = EXCLUDED.total_qty,
+                qty_available = EXCLUDED.qty_available,
+                qty_reserved = EXCLUDED.qty_reserved,
+                qty_borrowed = EXCLUDED.qty_borrowed,
+                others = EXCLUDED.others,
+                location = EXCLUDED.location,
+                category = EXCLUDED.category;
+            `, [
+                record.item_id, record.item_name, record.brand, record.model, record.asset_number, record.serial_no, record.size_specs, record.total_qty, record.qty_available, record.qty_reserved, record.qty_borrowed, record.others, record.location, record.category
+            ]);
+        }
+
+        // Commit transaction
+        await client.query('COMMIT');
+        client.release();
+
+        res.status(200).json({ message: 'Data imported successfully' });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Error during data import:', err);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
