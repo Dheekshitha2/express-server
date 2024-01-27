@@ -530,10 +530,8 @@ app.post('/api/submit-form', async (req, res) => {
     }
 });
 
-// To insert inventory items update from excel to supabase
 app.post('/api/import-excel-data', async (req, res) => {
-    const data = req.body; // Assuming the body contains an array of records from Excel
-    console.log(data); // Log the received data
+    const records = req.body; // Assuming the body is now an array of records
 
     try {
         const client = await pool.connect();
@@ -541,8 +539,8 @@ app.post('/api/import-excel-data', async (req, res) => {
         // Begin transaction
         await client.query('BEGIN');
 
-        for (const record of data) {
-            // Construct and execute the SQL query for each record
+        for (const record of records) {
+            // Execute the SQL query for each record in the array
             await client.query(`
                 INSERT INTO your_table_name
                 (item_id, item_name, brand, model, asset_number, serial_no, size_specs, total_qty, qty_available, qty_reserved, qty_borrowed, others, location, category)
@@ -564,7 +562,7 @@ app.post('/api/import-excel-data', async (req, res) => {
                 location = EXCLUDED.location,
                 category = EXCLUDED.category;
             `, [
-                record.item_id, record.item_name, record.brand, record.model, record.asset_number, record.serial_no, record.size_specs, record.total_qty, record.qty_available, record.qty_reserved, record.qty_borrowed, record.others, record.location, record.category
+                record.ItemID, record.ItemName, record.Brand, record.Model, record.AssetNumber, record.SerialNo, record.SizeSpecs, record.TotalQty, record.QtyAvailable, record.QtyReserved, record.QtyBorrowed, record.Others, record.Location, record.Category
             ]);
         }
 
@@ -575,9 +573,12 @@ app.post('/api/import-excel-data', async (req, res) => {
         res.status(200).json({ message: 'Data imported successfully' });
     } catch (err) {
         console.error('Error during data import:', err);
+        await client.query('ROLLBACK'); // Rollback in case of an error
+        client.release();
         res.status(500).json({ message: 'Server error' });
     }
 });
+
 
 
 
