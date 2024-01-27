@@ -546,7 +546,6 @@ app.post('/api/import-excel-data', async (req, res) => {
         client = await pool.connect();
         await client.query('BEGIN');
 
-        // Adjusted SQL query to use variables for numeric fields
         const result = await client.query(`
             INSERT INTO hub_items_new
             (item_id, item_name, brand, model, asset_number, serial_no, size_specs, total_qty, qty_available, qty_reserved, qty_borrowed, others, location, category, loanable)
@@ -569,7 +568,7 @@ app.post('/api/import-excel-data', async (req, res) => {
             category = EXCLUDED.category,
             loanable = EXCLUDED.loanable;
         `, [
-            record.ItemID, record.ItemName, record.Brand, record.Model, record.AssetNumber, record.SerialNo, record.SizeSpecs, totalQty, qtyAvailable, qtyReserved, qtyBorrowed, record.Others, record.Location, record.Category, record.Loanable === "true" // Assuming 'Loanable' is a boolean represented as a string
+            record.ItemID, record.ItemName, record.Brand, record.Model, record.AssetNumber, record.SerialNo, record.SizeSpecs, totalQty, qtyAvailable, qtyReserved, qtyBorrowed, record.Others, record.Location, record.Category, record.Loanable
         ]);
 
         await client.query('COMMIT');
@@ -586,6 +585,7 @@ app.post('/api/import-excel-data', async (req, res) => {
         }
     }
 });
+
 
 
 
