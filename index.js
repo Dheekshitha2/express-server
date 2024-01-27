@@ -540,7 +540,7 @@ app.post('/api/insert-excel-data', async (req, res) => {
 
         // Insert data into Supabase. Assume `pool` is your connection to Supabase.
         const result = await pool.query(`
-            INSERT INTO your_table_name
+            INSERT INTO hub_items_new
             (item_id, item_name, brand, model, asset_number, serial_no, size_specs,
             total_qty, qty_available, qty_reserved, qty_borrowed, others, location, category, loanable)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
