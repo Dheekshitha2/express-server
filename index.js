@@ -530,6 +530,30 @@ app.post('/api/submit-form', async (req, res) => {
     }
 });
 
+// To insert inventory items update from excel to supabase
+app.post('/api/insert-excel-data', async (req, res) => {
+    try {
+        const {
+            ItemID, ItemName, Brand, Model, AssetNumber, SerialNo, SizeSpecs,
+            TotalQty, QtyAvailable, QtyReserved, QtyBorrowed, Others, Location, Category, Loanable
+        } = req.body;
+
+        // Insert data into Supabase. Assume `pool` is your connection to Supabase.
+        const result = await pool.query(`
+            INSERT INTO your_table_name
+            (item_id, item_name, brand, model, asset_number, serial_no, size_specs,
+            total_qty, qty_available, qty_reserved, qty_borrowed, others, location, category, loanable)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        `, [ItemID, ItemName, Brand, Model, AssetNumber, SerialNo, SizeSpecs, TotalQty, QtyAvailable, QtyReserved, QtyBorrowed, Others, Location, Category, Loanable]);
+
+        res.status(200).json({ message: 'Data inserted successfully' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+});
+
+
 
 
 app.listen(PORT, '0.0.0.0', () => {
