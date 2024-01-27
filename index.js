@@ -16,10 +16,10 @@ app.use(express.json());
 
 // ROUTES //
 
-// For retrieving a list of all the inventory items
 app.get('/api/inventory', async (req, res) => {
     try {
-        const allInventory = await pool.query("SELECT * FROM hub_items_new"); //changed table name
+        // Adjusted SQL query to only select items where loanable is 'Yes'
+        const allInventory = await pool.query("SELECT * FROM hub_items_new WHERE loanable = 'Yes'");
         res.json(allInventory.rows);
     } catch (err) {
         console.error(err.message);
