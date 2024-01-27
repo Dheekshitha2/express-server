@@ -531,53 +531,56 @@ app.post('/api/submit-form', async (req, res) => {
 });
 
 app.post('/api/import-excel-data', async (req, res) => {
-    const records = req.body; // Assuming the body is now an array of records
+    const record = req.body; // Now expecting a single object, not an array
+    let client;
 
     try {
-        const client = await pool.connect();
-
-        // Begin transaction
+        client = await pool.connect();
         await client.query('BEGIN');
 
-        for (const record of records) {
-            // Execute the SQL query for each record in the array
-            await client.query(`
-                INSERT INTO your_table_name
-                (item_id, item_name, brand, model, asset_number, serial_no, size_specs, total_qty, qty_available, qty_reserved, qty_borrowed, others, location, category)
-                VALUES
-                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-                ON CONFLICT (item_id)
-                DO UPDATE SET
-                item_name = EXCLUDED.item_name,
-                brand = EXCLUDED.brand,
-                model = EXCLUDED.model,
-                asset_number = EXCLUDED.asset_number,
-                serial_no = EXCLUDED.serial_no,
-                size_specs = EXCLUDED.size_specs,
-                total_qty = EXCLUDED.total_qty,
-                qty_available = EXCLUDED.qty_available,
-                qty_reserved = EXCLUDED.qty_reserved,
-                qty_borrowed = EXCLUDED.qty_borrowed,
-                others = EXCLUDED.others,
-                location = EXCLUDED.location,
-                category = EXCLUDED.category;
-            `, [
-                record.ItemID, record.ItemName, record.Brand, record.Model, record.AssetNumber, record.SerialNo, record.SizeSpecs, record.TotalQty, record.QtyAvailable, record.QtyReserved, record.QtyBorrowed, record.Others, record.Location, record.Category
-            ]);
-        }
+        // Adjust your SQL query to include the 'Loanable' column and use 'hub_items_new' as the table name
+        const result = await client.query(`
+            INSERT INTO hub_items_new
+            (item_id, item_name, brand, model, asset_number, serial_no, size_specs, total_qty, qty_available, qty_reserved, qty_borrowed, others, location, category, loanable)
+            VALUES
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            ON CONFLICT (item_id)
+            DO UPDATE SET
+            item_name = EXCLUDED.item_name,
+            brand = EXCLUDED.brand,
+            model = EXCLUDED.model,
+            asset_number = EXCLUDED.asset_number,
+            serial_no = EXCLUDED.serial_no,
+            size_specs = EXCLUDED.size_specs,
+            total_qty = EXCLUDED.total_qty,
+            qty_available = EXCLUDED.qty_available,
+            qty_reserved = EXCLUDED.qty_reserved,
+            qty_borrowed = EXCLUDED.qty_borrowed,
+            others = EXCLUDED.others,
+            location = EXCLUDED.location,
+            category = EXCLUDED.category,
+            loanable = EXCLUDED.loanable;
+        `, [
+            record.ItemID, record.ItemName, record.Brand, record.Model, record.AssetNumber, record.SerialNo, record.SizeSpecs, record.TotalQty, record.QtyAvailable, record.QtyReserved, record.QtyBorrowed, record.Others, record.Location, record.Category, record.Loanable
+        ]);
 
-        // Commit transaction
         await client.query('COMMIT');
-        client.release();
-
-        res.status(200).json({ message: 'Data imported successfully' });
+        res.status(200).json({ message: 'Data imported successfully', result: result.rows });
     } catch (err) {
         console.error('Error during data import:', err);
-        await client.query('ROLLBACK'); // Rollback in case of an error
-        client.release();
+        // Ensure client exists before attempting to roll back to avoid a ReferenceError
+        if (client) {
+            await client.query('ROLLBACK');
+        }
         res.status(500).json({ message: 'Server error' });
+    } finally {
+        // Ensure client is released back to the pool in a finally block to handle both success and error cases
+        if (client) {
+            client.release();
+        }
     }
 });
+
 
 
 
