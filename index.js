@@ -531,14 +531,22 @@ app.post('/api/submit-form', async (req, res) => {
 });
 
 app.post('/api/import-excel-data', async (req, res) => {
-    const record = req.body; // Now expecting a single object, not an array
+    const record = req.body; // Assuming the body is an object representing a single record
     let client;
 
     try {
+        // Convert empty strings for numeric fields to null (or a default value)
+        const convertToBigInt = (value) => value === "" ? null : parseInt(value, 10);
+
+        const totalQty = convertToBigInt(record.TotalQty);
+        const qtyAvailable = convertToBigInt(record.QtyAvailable);
+        const qtyReserved = convertToBigInt(record.QtyReserved);
+        const qtyBorrowed = convertToBigInt(record.QtyBorrowed);
+
         client = await pool.connect();
         await client.query('BEGIN');
 
-        // Adjust your SQL query to include the 'Loanable' column and use 'hub_items_new' as the table name
+        // Adjusted SQL query to use variables for numeric fields
         const result = await client.query(`
             INSERT INTO hub_items_new
             (item_id, item_name, brand, model, asset_number, serial_no, size_specs, total_qty, qty_available, qty_reserved, qty_borrowed, others, location, category, loanable)
@@ -561,28 +569,23 @@ app.post('/api/import-excel-data', async (req, res) => {
             category = EXCLUDED.category,
             loanable = EXCLUDED.loanable;
         `, [
-            record.ItemID, record.ItemName, record.Brand, record.Model, record.AssetNumber, record.SerialNo, record.SizeSpecs, record.TotalQty, record.QtyAvailable, record.QtyReserved, record.QtyBorrowed, record.Others, record.Location, record.Category, record.Loanable
+            record.ItemID, record.ItemName, record.Brand, record.Model, record.AssetNumber, record.SerialNo, record.SizeSpecs, totalQty, qtyAvailable, qtyReserved, qtyBorrowed, record.Others, record.Location, record.Category, record.Loanable === "true" // Assuming 'Loanable' is a boolean represented as a string
         ]);
 
         await client.query('COMMIT');
         res.status(200).json({ message: 'Data imported successfully', result: result.rows });
     } catch (err) {
         console.error('Error during data import:', err);
-        // Ensure client exists before attempting to roll back to avoid a ReferenceError
         if (client) {
             await client.query('ROLLBACK');
         }
         res.status(500).json({ message: 'Server error' });
     } finally {
-        // Ensure client is released back to the pool in a finally block to handle both success and error cases
         if (client) {
             client.release();
         }
     }
 });
-
-
-
 
 
 
