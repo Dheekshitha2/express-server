@@ -503,23 +503,21 @@ app.post('/api/submit-form', async (req, res) => {
 
         // Prepare the data for Power Automate
         let formData = {
-            completion_time: formatDate(new Date()), // Use formatDate function here
+            completion_time: formatDate(new Date()), // Use formatDate function
             email, name, matric_or_staff_no, project_title, project_code,
             phone_number, start_usage_date, end_usage_date, location_of_usage,
             purpose_of_usage, project_supervisor_name, supervisor_email,
             additional_remarks
         };
 
+        // Handle item_id_, item_name_, and quantity_ fields
         Object.keys(req.body).forEach(key => {
-            if (key.startsWith('item_name_') || key.startsWith('quantity_')) {
-                // Convert quantities to string if they are not already
-                if (key.startsWith('quantity_')) {
-                    formData[key] = String(req.body[key]);
-                } else {
-                    formData[key] = req.body[key];
-                }
+            if (key.startsWith('item_id_') || key.startsWith('item_name_') || key.startsWith('quantity_')) {
+                // Convert quantities to string if they are not already, ensure item_id_ is included
+                formData[key] = String(req.body[key]);
             }
         });
+
         // Forward the data to Power Automate
         const powerAutomateResponse = await axios.post(POWER_AUTOMATE_URL, formData);
 
