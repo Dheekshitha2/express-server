@@ -421,18 +421,17 @@ app.get('/api/get-student-id', async (req, res) => {
 });
 
 
-
-// To retrieve the transaction ID using the student's matric number
+// To retrieve the transaction ID using the student's phone number
 app.get('/api/get-transaction-id', async (req, res) => {
     try {
-        const matricNo = req.query.matric_no; // Get matric_no from query parameters
+        const phoneNumber = req.query.phone_number; // Get phone_number from query parameters
 
-        if (!matricNo) {
-            return res.status(400).json({ message: "Matric number is required" });
+        if (!phoneNumber) {
+            return res.status(400).json({ message: "Phone number is required" });
         }
 
-        // Query the database to find the transaction_id by matric_no
-        const transactionResult = await pool.query('SELECT transaction_id FROM loan_transaction WHERE matric_no = $1', [matricNo]);
+        // Query the database to find the transaction_id by phone_number
+        const transactionResult = await pool.query('SELECT transaction_id FROM loan_transaction WHERE phone_number = $1', [phoneNumber]);
 
         if (transactionResult.rows.length > 0) {
             // Transaction found, return the transaction_id
@@ -447,7 +446,6 @@ app.get('/api/get-transaction-id', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
-
 
 
 // Endpoint for adding a new loan transaction
