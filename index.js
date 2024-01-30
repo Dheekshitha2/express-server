@@ -507,7 +507,7 @@ const formatDate = (date) => {
 
 app.post('/api/submit-form', async (req, res) => {
     try {
-        // Destructure the main fields from req.body
+        // Destructure the main fields from req.body, excluding matric_or_staff_no
         const {
             email, name, project_title, project_code,
             phone_number, start_usage_date, end_usage_date, location_of_usage,
@@ -515,19 +515,19 @@ app.post('/api/submit-form', async (req, res) => {
             additional_remarks
         } = req.body;
 
-        // Prepare the data for Power Automate
+        // Prepare the data for Power Automate, assuming formatDate is defined elsewhere
         let formData = {
-            completion_time: formatDate(new Date()), // Use formatDate function
+            completion_time: formatDate(new Date()), // Assuming formatDate is correctly defined elsewhere
             email, name, project_title, project_code,
             phone_number, start_usage_date, end_usage_date, location_of_usage,
             purpose_of_usage, project_supervisor_name, supervisor_email,
             additional_remarks
         };
 
-        // Handle item_id_, item_name_, and quantity_ fields
+        // Handle item_id_, item_name_, and quantity_ fields dynamically
         Object.keys(req.body).forEach(key => {
             if (key.startsWith('item_id_') || key.startsWith('item_name_') || key.startsWith('quantity_')) {
-                // Convert quantities to string if they are not already, ensure item_id_ is included
+                // Ensure item_id_ is included, convert quantities to string
                 formData[key] = String(req.body[key]);
             }
         });
@@ -541,6 +541,7 @@ app.post('/api/submit-form', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
 
 app.post('/api/import-excel-data', async (req, res) => {
     const record = req.body; // Assuming the body is an object representing a single record
