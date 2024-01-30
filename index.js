@@ -224,7 +224,6 @@ app.post('/api/excel-update', async (req, res) => {
             quantity_4,
             item_name_5,
             quantity_5,
-            matric_or_staff_no,
             project_title,
             project_code,
             phone_number,
@@ -255,11 +254,11 @@ app.post('/api/excel-update', async (req, res) => {
             (ID, completion_time, email, name, item_name_1, quantity_1, 
             item_name_2, quantity_2, item_name_3, quantity_3, 
             item_name_4, quantity_4, item_name_5, quantity_5, 
-            matric_or_staff_no, project_title, project_code, 
+            project_title, project_code, 
             phone_number, start_usage_date, end_usage_date, 
             location_of_usage, purpose_of_usage, project_supervisor_name, 
             supervisor_email, additional_remarks, is_deleted) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, FALSE)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, FALSE)
             ON CONFLICT (ID) DO UPDATE SET 
             completion_time = EXCLUDED.completion_time, 
             email = EXCLUDED.email,
@@ -274,7 +273,6 @@ app.post('/api/excel-update', async (req, res) => {
             quantity_4 = EXCLUDED.quantity_4,
             item_name_5 = EXCLUDED.item_name_5,
             quantity_5 = EXCLUDED.quantity_5,
-            matric_or_staff_no = EXCLUDED.matric_or_staff_no,
             project_title = EXCLUDED.project_title,
             project_code = EXCLUDED.project_code,
             phone_number = EXCLUDED.phone_number,
@@ -292,7 +290,7 @@ app.post('/api/excel-update', async (req, res) => {
             ID, processedCompletionTime, email, name, item_name_1, convertedQuantity1,
             item_name_2, convertedQuantity2, item_name_3, convertedQuantity3,
             item_name_4, convertedQuantity4, item_name_5, convertedQuantity5,
-            matric_or_staff_no, project_title, project_code,
+            project_title, project_code,
             phone_number, processedStartDate, processedEndDate,
             location_of_usage, purpose_of_usage, project_supervisor_name,
             supervisor_email, additional_remarks
@@ -371,22 +369,22 @@ app.post('/api/excel-update', async (req, res) => {
     }
 });
 
-// To insert student data into the database
+// To insert student data into the database using project code
 app.post('/api/insert-students', async (req, res) => {
     try {
         // Destructure the received data
-        const { name, email, phone_number, matric_no } = req.body;
+        const { name, email, phone_number, project_code } = req.body;
 
-        // Check if the student already exists by matric_no
-        const existingStudent = await pool.query('SELECT student_id FROM students WHERE matric_no = $1', [matric_no]);
+        // Check if the student already exists by project_code
+        const existingStudent = await pool.query('SELECT student_id FROM students WHERE phone_number = $1', [phone_number]);
 
         if (existingStudent.rows.length === 0) {
             // If the student does not exist, insert them into the database
-            await pool.query('INSERT INTO students (name, email, phone_number, matric_no) VALUES ($1, $2, $3, $4)', [name, email, phone_number, matric_no]);
+            await pool.query('INSERT INTO students (name, email, phone_number, project_code) VALUES ($1, $2, $3, $4)', [name, email, phone_number, project_code]);
             res.status(200).json({ message: 'Student data processed successfully' });
         } else {
-            // If a student with the same matric_no exists, respond accordingly
-            res.status(200).json({ message: 'Student with this matriculation number already exists' });
+            // If a student with the same project code exists, respond accordingly
+            res.status(200).json({ message: 'Student with this phone number already exists' });
         }
     } catch (err) {
         console.error(err.message);
@@ -395,17 +393,18 @@ app.post('/api/insert-students', async (req, res) => {
 });
 
 
-// To retrieve the student ID of a student using their matric number
+
+// To retrieve the student ID of a student using their phone number
 app.get('/api/get-student-id', async (req, res) => {
     try {
-        const matricNo = req.query.matric_no; // Get matric_no from query parameters
+        const phoneNumber = req.query.phone_number; // Get phone_number from query parameters
 
-        if (!matricNo) {
-            return res.status(400).json({ message: "Matric number is required" });
+        if (!phoneNumber) {
+            return res.status(400).json({ message: "Phone number is required" });
         }
 
-        // Query the database to find the student_id by matric_no
-        const studentResult = await pool.query('SELECT student_id FROM students WHERE matric_no = $1', [matricNo]);
+        // Query the database to find the student_id by phone_number
+        const studentResult = await pool.query('SELECT student_id FROM students WHERE phone_number = $1', [phoneNumber]);
 
         if (studentResult.rows.length > 0) {
             // Student found, return the student_id
@@ -420,6 +419,8 @@ app.get('/api/get-student-id', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
+
 
 // To retrieve the transaction ID using the student's matric number
 app.get('/api/get-transaction-id', async (req, res) => {
@@ -449,30 +450,43 @@ app.get('/api/get-transaction-id', async (req, res) => {
 
 
 
-// Endpoint for adding a new student
+// Endpoint for adding a new loan transaction
 app.post('/api/loan-transaction/add', async (req, res) => {
     try {
         // Destructure the required data from the request body
-        const { student_id, start_usage_date, end_usage_date, status, matric_no } = req.body;
+        const { student_id, start_usage_date, end_usage_date, status, phone_number } = req.body;
 
         // Basic validation to check if all required fields are present
-        if (!student_id || !start_usage_date || !end_usage_date || !status || !matric_no) {
+        if (!student_id || !start_usage_date || !end_usage_date || !status || !phone_number) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // Insert the new student data into the students table
-        const newStudent = await pool.query(
-            "INSERT INTO loan_transaction (student_id, start_usage_date, end_usage_date, status, matric_no) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-            [student_id, start_usage_date, end_usage_date, status, matric_no]
+        // Assuming you want to ensure the student exists based on the student_id and phone_number
+        // You might want to first verify if the student exists in your students table
+        const studentExists = await pool.query(
+            "SELECT * FROM students WHERE student_id = $1 AND phone_number = $2",
+            [student_id, phone_number]
         );
 
-        // Send back the inserted student data
-        res.json(newStudent.rows[0]);
+        if (studentExists.rows.length === 0) {
+            // If the student doesn't exist, respond with an error
+            return res.status(404).json({ error: 'Student not found with the given ID and phone number' });
+        }
+
+        // Insert the new loan transaction data into the loan_transaction table
+        const newLoanTransaction = await pool.query(
+            "INSERT INTO loan_transaction (student_id, start_usage_date, end_usage_date, status, phone_number) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+            [student_id, start_usage_date, end_usage_date, status, phone_number]
+        );
+
+        // Send back the inserted loan transaction data
+        res.json(newLoanTransaction.rows[0]);
     } catch (err) {
         console.error(err.stack);
         res.status(500).send("Server error");
     }
 });
+
 
 const formatDate = (date) => {
     const pad = (num) => num < 10 ? '0' + num : num.toString();
