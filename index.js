@@ -509,7 +509,7 @@ app.post('/api/submit-form', async (req, res) => {
     try {
         // Destructure the main fields from req.body
         const {
-            email, name, matric_or_staff_no, project_title, project_code,
+            email, name, project_title, project_code,
             phone_number, start_usage_date, end_usage_date, location_of_usage,
             purpose_of_usage, project_supervisor_name, supervisor_email,
             additional_remarks
@@ -518,7 +518,7 @@ app.post('/api/submit-form', async (req, res) => {
         // Prepare the data for Power Automate
         let formData = {
             completion_time: formatDate(new Date()), // Use formatDate function
-            email, name, matric_or_staff_no, project_title, project_code,
+            email, name, project_title, project_code,
             phone_number, start_usage_date, end_usage_date, location_of_usage,
             purpose_of_usage, project_supervisor_name, supervisor_email,
             additional_remarks
