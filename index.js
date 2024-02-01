@@ -16,6 +16,11 @@ app.use(express.json());
 
 // ROUTES //
 
+app.get('/', (req, res) => {
+    res.send('Temporary response for debugging');
+});
+
+
 app.get('/api/inventory', async (req, res) => {
     try {
         // Adjusted SQL query to only select items where loanable is 'Yes'
