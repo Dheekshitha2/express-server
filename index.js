@@ -559,14 +559,16 @@ app.post('/api/import-excel-data', async (req, res) => {
         const qtyReserved = convertToBigInt(record.QtyReserved);
         const qtyBorrowed = convertToBigInt(record.QtyBorrowed);
 
+        const requiresApproval = record.RequiresApproval;
+
         client = await pool.connect();
         await client.query('BEGIN');
 
         const result = await client.query(`
             INSERT INTO hub_items_new
-            (item_id, item_name, brand, model, asset_number, serial_no, size_specs, total_qty, qty_available, qty_reserved, qty_borrowed, others, location, category, loanable)
+            (item_id, item_name, brand, model, asset_number, serial_no, size_specs, total_qty, qty_available, qty_reserved, qty_borrowed, others, location, category, loanable, requiresApproval)
             VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             ON CONFLICT (item_id)
             DO UPDATE SET
             item_name = EXCLUDED.item_name,
@@ -583,8 +585,9 @@ app.post('/api/import-excel-data', async (req, res) => {
             location = EXCLUDED.location,
             category = EXCLUDED.category,
             loanable = EXCLUDED.loanable;
+            requires_approval = EXCLUDED.requires_approval;
         `, [
-            record.ItemID, record.ItemName, record.Brand, record.Model, record.AssetNumber, record.SerialNo, record.SizeSpecs, totalQty, qtyAvailable, qtyReserved, qtyBorrowed, record.Others, record.Location, record.Category, record.Loanable
+            record.ItemID, record.ItemName, record.Brand, record.Model, record.AssetNumber, record.SerialNo, record.SizeSpecs, totalQty, qtyAvailable, qtyReserved, qtyBorrowed, record.Others, record.Location, record.Category, record.Loanable, requiresApproval
         ]);
 
         await client.query('COMMIT');
