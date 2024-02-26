@@ -24,7 +24,7 @@ app.get('/', (req, res) => {
 app.get('/api/inventory', async (req, res) => {
     try {
         // Adjusted SQL query to only select items where loanable is 'Yes'
-        const allInventory = await pool.query("SELECT * FROM hub_items_new WHERE loanable = 'Yes'");
+        const allInventory = await pool.query("SELECT * FROM hub_items_unique WHERE loanable = 'Yes'");
         res.json(allInventory.rows);
     } catch (err) {
         console.error(err.message);
