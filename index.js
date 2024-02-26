@@ -484,13 +484,12 @@ app.post('/api/import-excel-data', async (req, res) => {
 
         const result = await client.query(`
             INSERT INTO hub_items_unique
-            (item_id, item_name, brand, total_qty, qty_available, qty_reserved, qty_borrowed, loanable, requires_approval)
+            (item_id, item_name, total_qty, qty_available, qty_reserved, qty_borrowed, loanable, requires_approval)
             VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT (item_id)
             DO UPDATE SET
             item_name = EXCLUDED.item_name,
-            brand = EXCLUDED.brand,
             total_qty = EXCLUDED.total_qty,
             qty_available = EXCLUDED.qty_available,
             qty_reserved = EXCLUDED.qty_reserved,
@@ -498,7 +497,7 @@ app.post('/api/import-excel-data', async (req, res) => {
             loanable = EXCLUDED.loanable,
             requires_approval = EXCLUDED.requires_approval;
         `, [
-            record.ItemID, record.ItemName, record.Brand, totalQty, qtyAvailable, qtyReserved, qtyBorrowed, loanable, requiresApproval
+            record.ItemID, record.ItemName, totalQty, qtyAvailable, qtyReserved, qtyBorrowed, loanable, requiresApproval
         ]);
 
         await client.query('COMMIT');
@@ -515,8 +514,6 @@ app.post('/api/import-excel-data', async (req, res) => {
         }
     }
 });
-
-
 
 
 
