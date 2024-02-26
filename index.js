@@ -464,6 +464,7 @@ app.post('/api/submit-form', async (req, res) => {
 
 app.post('/api/import-excel-data', async (req, res) => {
     const record = req.body; // The body is an object representing a single record
+    console.log("Received record:", record);
     let client;
 
     try {
