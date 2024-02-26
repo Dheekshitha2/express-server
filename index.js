@@ -124,91 +124,7 @@ app.put('/api/inventory/:item_id', async (req, res) => {
     }
 });
 
-app.post('/api/inventory/borrow', async (req, res) => {
-    const { item_id, student_id, quantity } = req.body;
 
-    // Basic validation
-    if (!item_id || !student_id || !quantity) {
-        return res.status(400).json({ error: 'Missing required fields' });
-    }
-    try {
-        await pool.query('BEGIN'); // Start a transaction
-
-        // Check if enough items are available
-        const itemCheck = await pool.query(
-            'SELECT qty_available FROM hub_items WHERE item_id = $1', [item_id]
-        );
-
-        if (itemCheck.rows.length === 0) {
-            await pool.query('ROLLBACK');
-            return res.status(404).json({ error: 'Item not found' });
-        }
-
-        if (itemCheck.rows[0].qty_available < quantity) {
-            await pool.query('ROLLBACK');
-            return res.status(400).json({ error: 'Not enough items available' });
-        }
-
-        // Update hub_items table
-        await pool.query(
-            'UPDATE hub_items SET qty_borrowed = qty_borrowed + $1, qty_available = qty_available - $1 WHERE item_id = $2',
-            [quantity, item_id]
-        );
-
-        // Insert into BorrowRequests table
-        await pool.query(
-            'INSERT INTO BorrowRequests (student_id, item_id, qty_requested, status) VALUES ($1, $2, $3, $4)',
-            [student_id, item_id, quantity, 'Pending']
-        );
-
-        await pool.query('COMMIT'); // Commit the transaction
-
-        res.json({ message: 'Item borrowed successfully' });
-    } catch (err) {
-        await pool.query('ROLLBACK'); // Rollback in case of an error
-        console.error(err.message);
-        res.status(500).send('Server error');
-    }
-});
-
-app.post('/api/inventory/return', async (req, res) => {
-    const { item_id, student_id, quantity } = req.body;
-
-    // Basic validation
-    if (!item_id || !student_id || !quantity) {
-        return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    try {
-        await pool.query('BEGIN'); // Start a transaction
-
-        // Update hub_items table
-        await pool.query(
-            'UPDATE hub_items SET qty_borrowed = qty_borrowed - $1, qty_available = qty_available + $1 WHERE item_id = $2',
-            [quantity, item_id]
-        );
-
-        // Update the BorrowedItems table
-        await pool.query(
-            `UPDATE BorrowedItems
-             SET qty_returned = qty_returned + $1
-             FROM BorrowRequests
-             WHERE BorrowedItems.request_id = BorrowRequests.request_id
-             AND BorrowRequests.student_id = $2
-             AND BorrowedItems.item_id = $3
-             AND BorrowedItems.qty_returned + $1 <= BorrowedItems.qty_borrowed`,
-            [quantity, student_id, item_id]
-        );
-
-        await pool.query('COMMIT'); // Commit the transaction
-
-        res.json({ message: 'Item returned successfully' });
-    } catch (err) {
-        await pool.query('ROLLBACK'); // Rollback in case of an error
-        console.error(err.message);
-        res.status(500).send('Server error');
-    }
-});
 
 // To validate the received data, check inventory availability, and update the database accordingly.
 app.post('/api/excel-update', async (req, res) => {
@@ -547,47 +463,41 @@ app.post('/api/submit-form', async (req, res) => {
 
 
 app.post('/api/import-excel-data', async (req, res) => {
-    const record = req.body; // Assuming the body is an object representing a single record
+    const record = req.body; // The body is an object representing a single record
     let client;
 
     try {
         // Convert empty strings for numeric fields to null (or a default value)
-        const convertToBigInt = (value) => value === "" ? null : parseInt(value, 10);
+        const convertToInt = (value) => value === "" ? null : parseInt(value, 10);
 
-        const totalQty = convertToBigInt(record.TotalQty);
-        const qtyAvailable = convertToBigInt(record.QtyAvailable);
-        const qtyReserved = convertToBigInt(record.QtyReserved);
-        const qtyBorrowed = convertToBigInt(record.QtyBorrowed);
+        const totalQty = convertToInt(record.TotalQty);
+        const qtyAvailable = convertToInt(record.QtyAvailable);
+        const qtyReserved = convertToInt(record.QtyReserved);
+        const qtyBorrowed = convertToInt(record.QtyBorrowed);
 
-        const requiresApproval = record.RequiresApproval;
+        const loanable = record.Loanable === "Yes"; // Assuming Loanable is a Yes/No string
+        const requiresApproval = record.RequiresApproval === "Yes"; // Assuming RequiresApproval is a Yes/No string
 
         client = await pool.connect();
         await client.query('BEGIN');
 
         const result = await client.query(`
-            INSERT INTO hub_items_new
-            (item_id, item_name, brand, model, asset_number, serial_no, size_specs, total_qty, qty_available, qty_reserved, qty_borrowed, others, location, category, loanable, requiresApproval)
+            INSERT INTO hub_items_unique
+            (item_id, item_name, brand, total_qty, qty_available, qty_reserved, qty_borrowed, loanable, requires_approval)
             VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             ON CONFLICT (item_id)
             DO UPDATE SET
             item_name = EXCLUDED.item_name,
             brand = EXCLUDED.brand,
-            model = EXCLUDED.model,
-            asset_number = EXCLUDED.asset_number,
-            serial_no = EXCLUDED.serial_no,
-            size_specs = EXCLUDED.size_specs,
             total_qty = EXCLUDED.total_qty,
             qty_available = EXCLUDED.qty_available,
             qty_reserved = EXCLUDED.qty_reserved,
             qty_borrowed = EXCLUDED.qty_borrowed,
-            others = EXCLUDED.others,
-            location = EXCLUDED.location,
-            category = EXCLUDED.category,
-            loanable = EXCLUDED.loanable;
+            loanable = EXCLUDED.loanable,
             requires_approval = EXCLUDED.requires_approval;
         `, [
-            record.ItemID, record.ItemName, record.Brand, record.Model, record.AssetNumber, record.SerialNo, record.SizeSpecs, totalQty, qtyAvailable, qtyReserved, qtyBorrowed, record.Others, record.Location, record.Category, record.Loanable, requiresApproval
+            record.ItemID, record.ItemName, record.Brand, totalQty, qtyAvailable, qtyReserved, qtyBorrowed, loanable, requiresApproval
         ]);
 
         await client.query('COMMIT');
@@ -604,6 +514,7 @@ app.post('/api/import-excel-data', async (req, res) => {
         }
     }
 });
+
 
 
 
