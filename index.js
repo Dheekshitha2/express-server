@@ -32,6 +32,24 @@ app.get('/api/inventory', async (req, res) => {
     }
 });
 
+// Endpoint to get size_specs and model by item_id
+app.get('/api/item-details/:item_id', async (req, res) => {
+    try {
+        const { item_id } = req.params;
+        const itemDetails = await pool.query("SELECT model, size_specs FROM hub_items_new WHERE item_id = $1", [item_id]);
+
+        if (itemDetails.rows.length === 0) {
+            return res.status(404).json({ message: "Item details not found" });
+        }
+
+        res.json(itemDetails.rows[0]);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Server error");
+    }
+});
+
+
 // For retrieving details of a specific inventory item by its ID
 app.get('/api/inventory/:item_id', async (req, res) => {
     try {
@@ -40,7 +58,7 @@ app.get('/api/inventory/:item_id', async (req, res) => {
 
         // Perform a SELECT operation in the database using provided ID
         const item = await pool.query(
-            "SELECT * FROM hub_items_new WHERE item_id = $1", [item_id]
+            "SELECT * FROM hub_items_unique WHERE item_id = $1", [item_id]
         );
 
         // Check if the item was found
@@ -464,7 +482,6 @@ app.post('/api/submit-form', async (req, res) => {
 
 app.post('/api/import-excel-data', async (req, res) => {
     const record = req.body; // The body is an object representing a single record
-    console.log("Received record:", record);
     let client;
 
     try {
@@ -479,25 +496,34 @@ app.post('/api/import-excel-data', async (req, res) => {
         const loanable = record.Loanable === "Yes"; // Assuming Loanable is a Yes/No string
         const requiresApproval = record.RequiresApproval === "Yes"; // Assuming RequiresApproval is a Yes/No string
 
+        // Extract new fields from the request body
+        const model = record.Model;
+        const sizeSpecs = record.SizeSpecs;
+        const category = record.Category;
+
         client = await pool.connect();
         await client.query('BEGIN');
 
         const result = await client.query(`
             INSERT INTO hub_items_unique
-            (item_id, item_name, total_qty, qty_available, qty_reserved, qty_borrowed, loanable, requires_approval)
+            (item_id, item_name, brand, total_qty, qty_available, qty_reserved, qty_borrowed, loanable, requires_approval, model, size_specs, category)
             VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8)
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             ON CONFLICT (item_id)
             DO UPDATE SET
             item_name = EXCLUDED.item_name,
+            brand = EXCLUDED.brand,
             total_qty = EXCLUDED.total_qty,
             qty_available = EXCLUDED.qty_available,
             qty_reserved = EXCLUDED.qty_reserved,
             qty_borrowed = EXCLUDED.qty_borrowed,
             loanable = EXCLUDED.loanable,
-            requires_approval = EXCLUDED.requires_approval;
+            requires_approval = EXCLUDED.requires_approval,
+            model = EXCLUDED.model,
+            size_specs = EXCLUDED.size_specs,
+            category = EXCLUDED.category;
         `, [
-            record.ItemID, record.ItemName, totalQty, qtyAvailable, qtyReserved, qtyBorrowed, loanable, requiresApproval
+            record.ItemID, record.ItemName, record.Brand, totalQty, qtyAvailable, qtyReserved, qtyBorrowed, loanable, requiresApproval, model, sizeSpecs, category
         ]);
 
         await client.query('COMMIT');
@@ -514,6 +540,7 @@ app.post('/api/import-excel-data', async (req, res) => {
         }
     }
 });
+
 
 
 
