@@ -189,7 +189,7 @@ app.post('/api/excel-update', async (req, res) => {
             (ID, completion_time, email, name, item_name_1, quantity_1, 
             item_name_2, quantity_2, item_name_3, quantity_3, 
             item_name_4, quantity_4, item_name_5, quantity_5, 
-            course_code, project_code, // Changed from project_title to course_code
+            course_code, project_code,
             phone_number, start_usage_date, end_usage_date, 
             project_supervisor_name, 
             supervisor_email, is_deleted) 
