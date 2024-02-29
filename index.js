@@ -444,27 +444,24 @@ const formatDate = (date) => {
 
 app.post('/api/submit-form', async (req, res) => {
     try {
-        // Destructure the main fields from req.body, excluding matric_or_staff_no
+        // Removed purpose_of_usage from the destructuring assignment
         const {
-            email, name, project_title, project_code,
-            phone_number, start_usage_date, end_usage_date, location_of_usage,
-            purpose_of_usage, project_supervisor_name, supervisor_email,
-            additional_remarks
+            email, name, course_code, project_code,
+            phone_number, start_usage_date, end_usage_date,
+            project_supervisor_name, supervisor_email
         } = req.body;
 
-        // Prepare the data for Power Automate, assuming formatDate is defined elsewhere
+        // Prepare the data for Power Automate, excluding purpose_of_usage
         let formData = {
             completion_time: formatDate(new Date()), // Assuming formatDate is correctly defined elsewhere
-            email, name, project_title, project_code,
-            phone_number, start_usage_date, end_usage_date, location_of_usage,
-            purpose_of_usage, project_supervisor_name, supervisor_email,
-            additional_remarks
+            email, name, course_code, project_code,
+            phone_number, start_usage_date, end_usage_date,
+            project_supervisor_name, supervisor_email
         };
 
         // Handle item_id_, item_name_, and quantity_ fields dynamically
         Object.keys(req.body).forEach(key => {
             if (key.startsWith('item_id_') || key.startsWith('item_name_') || key.startsWith('quantity_')) {
-                // Ensure item_id_ is included, convert quantities to string
                 formData[key] = String(req.body[key]);
             }
         });
@@ -478,6 +475,7 @@ app.post('/api/submit-form', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
 
 
 app.post('/api/import-excel-data', async (req, res) => {
