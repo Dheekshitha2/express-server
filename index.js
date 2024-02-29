@@ -163,16 +163,13 @@ app.post('/api/excel-update', async (req, res) => {
             quantity_4,
             item_name_5,
             quantity_5,
-            project_title,
+            course_code, // Changed from project_title
             project_code,
             phone_number,
             start_usage_date,
             end_usage_date,
-            location_of_usage,
-            purpose_of_usage,
             project_supervisor_name,
-            supervisor_email,
-            additional_remarks
+            supervisor_email
         } = req.body;
 
         // Convert quantities from string to integer
@@ -187,17 +184,16 @@ app.post('/api/excel-update', async (req, res) => {
         const processedStartDate = start_usage_date ? new Date(start_usage_date).toISOString().split('T')[0] : null;
         const processedEndDate = end_usage_date ? new Date(end_usage_date).toISOString().split('T')[0] : null;
 
-        // Prepare SQL query and values
         const query = `
             INSERT INTO form_responses 
             (ID, completion_time, email, name, item_name_1, quantity_1, 
             item_name_2, quantity_2, item_name_3, quantity_3, 
             item_name_4, quantity_4, item_name_5, quantity_5, 
-            project_title, project_code, 
+            course_code, project_code, // Changed from project_title to course_code
             phone_number, start_usage_date, end_usage_date, 
-            location_of_usage, purpose_of_usage, project_supervisor_name, 
-            supervisor_email, additional_remarks, is_deleted) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, FALSE)
+            project_supervisor_name, 
+            supervisor_email, is_deleted) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, FALSE)
             ON CONFLICT (ID) DO UPDATE SET 
             completion_time = EXCLUDED.completion_time, 
             email = EXCLUDED.email,
@@ -212,16 +208,13 @@ app.post('/api/excel-update', async (req, res) => {
             quantity_4 = EXCLUDED.quantity_4,
             item_name_5 = EXCLUDED.item_name_5,
             quantity_5 = EXCLUDED.quantity_5,
-            project_title = EXCLUDED.project_title,
+            course_code = EXCLUDED.course_code, // Changed from project_title to course_code
             project_code = EXCLUDED.project_code,
             phone_number = EXCLUDED.phone_number,
             start_usage_date = EXCLUDED.start_usage_date,
             end_usage_date = EXCLUDED.end_usage_date,
-            location_of_usage = EXCLUDED.location_of_usage,
-            purpose_of_usage = EXCLUDED.purpose_of_usage,
             project_supervisor_name = EXCLUDED.project_supervisor_name,
             supervisor_email = EXCLUDED.supervisor_email,
-            additional_remarks = EXCLUDED.additional_remarks,
             is_deleted = FALSE
         `;
 
@@ -229,10 +222,11 @@ app.post('/api/excel-update', async (req, res) => {
             ID, processedCompletionTime, email, name, item_name_1, convertedQuantity1,
             item_name_2, convertedQuantity2, item_name_3, convertedQuantity3,
             item_name_4, convertedQuantity4, item_name_5, convertedQuantity5,
-            project_title, project_code,
+            course_code, // Changed from project_title
+            project_code,
             phone_number, processedStartDate, processedEndDate,
-            location_of_usage, purpose_of_usage, project_supervisor_name,
-            supervisor_email, additional_remarks
+            project_supervisor_name,
+            supervisor_email
         ];
 
         await pool.query(query, values);
