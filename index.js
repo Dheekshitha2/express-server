@@ -327,17 +327,19 @@ app.post('/api/insert-students', async (req, res) => {
 
 
 
-// To retrieve the student ID of a student using their phone number
+// To retrieve the student ID of a student using their email
 app.get('/api/get-student-id', async (req, res) => {
     try {
-        const phoneNumber = req.query.phone_number; // Get phone_number from query parameters
 
-        if (!phoneNumber) {
-            return res.status(400).json({ message: "Phone number is required" });
+        // Get email from query parameters
+        const email = req.query.email;
+
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
         }
 
-        // Query the database to find the student_id by phone_number
-        const studentResult = await pool.query('SELECT student_id FROM students WHERE phone_number = $1', [phoneNumber]);
+        // Query the database to find the student_id by email
+        const studentResult = await pool.query('SELECT student_id FROM students WHERE email = $1', [email]);
 
         if (studentResult.rows.length > 0) {
             // Student found, return the student_id
@@ -352,6 +354,7 @@ app.get('/api/get-student-id', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
 
 
 // To retrieve the transaction ID using the student's phone number
