@@ -394,6 +394,17 @@ app.post('/api/loan-transaction/add', async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
+        // Verify if the student exists based on the student_id, email, and phone_number
+        const studentExists = await pool.query(
+            "SELECT * FROM students WHERE student_id = $1 AND email = $2 AND phone_number = $3",
+            [student_id, email, phone_number]
+        );
+
+        if (studentExists.rows.length === 0) {
+            // If the student doesn't exist, respond with an error
+            return res.status(404).json({ error: 'Student not found with the given ID, email, and phone number' });
+        }
+
         // Insert the new loan transaction data into the loan_transaction table
         const newLoanTransaction = await pool.query(
             "INSERT INTO loan_transaction (student_id, start_usage_date, end_usage_date, status, email, phone_number) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
