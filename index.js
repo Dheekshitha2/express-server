@@ -387,28 +387,32 @@ app.get('/api/get-transaction-id', async (req, res) => {
 app.post('/api/loan-transaction/add', async (req, res) => {
     try {
         // Destructure the required data from the request body
-        const { student_id, email, phone_number, start_usage_date, end_usage_date, status } = req.body;
+        const { student_id, email, start_usage_date, end_usage_date, status } = req.body;
 
         // Basic validation to check if all required fields are present
-        if (!student_id || !email || !phone_number || !start_usage_date || !end_usage_date || !status) {
+        if (!student_id || !email || !start_usage_date || !end_usage_date || !status) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // Verify if the student exists based on the student_id, email, and phone_number
+        // Verify if the student exists based on the email only
         const studentExists = await pool.query(
-            "SELECT * FROM students WHERE student_id = $1 AND email = $2 AND phone_number = $3",
-            [student_id, email, phone_number]
+            "SELECT * FROM students WHERE email = $1",
+            [email]
         );
 
         if (studentExists.rows.length === 0) {
             // If the student doesn't exist, respond with an error
-            return res.status(404).json({ error: 'Student not found with the given ID, email, and phone number' });
+            return res.status(404).json({ error: 'Student not found with the given email' });
         }
 
-        // Insert the new loan transaction data into the loan_transaction table
+        // Get the student_id and phone_number from the studentExists query result
+        const studentIdFromDB = studentExists.rows[0].student_id;
+        const phoneNumberFromDB = studentExists.rows[0].phone_number;
+
+        // Insert the new loan transaction data into the loan_transaction table using the student_id from the database
         const newLoanTransaction = await pool.query(
             "INSERT INTO loan_transaction (student_id, start_usage_date, end_usage_date, status, email, phone_number) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-            [student_id, start_usage_date, end_usage_date, status, email, phone_number]
+            [studentIdFromDB, start_usage_date, end_usage_date, status, email, phoneNumberFromDB]
         );
 
         // Send back the inserted loan transaction data
@@ -418,6 +422,7 @@ app.post('/api/loan-transaction/add', async (req, res) => {
         res.status(500).send("Server error");
     }
 });
+
 
 
 
