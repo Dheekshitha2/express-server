@@ -452,6 +452,8 @@ app.post('/api/submit-form', async (req, res) => {
             project_supervisor_name, supervisor_email
         } = req.body;
 
+        console.log("Received form data:", req.body);
+
         // Prepare the data for Power Automate, excluding purpose_of_usage
         let formData = {
             completion_time: formatDate(new Date()),
