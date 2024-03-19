@@ -446,7 +446,6 @@ const formatDate = (date) => {
 
 app.post('/api/submit-form', async (req, res) => {
     try {
-        // Removed purpose_of_usage from the destructuring assignment
         const {
             email, name, course_code, project_code,
             phone_number, start_usage_date, end_usage_date,
@@ -455,11 +454,19 @@ app.post('/api/submit-form', async (req, res) => {
 
         // Prepare the data for Power Automate, excluding purpose_of_usage
         let formData = {
-            completion_time: formatDate(new Date()), // Assuming formatDate is correctly defined elsewhere
+            completion_time: formatDate(new Date()),
             email, name, course_code, project_code,
-            phone_number, start_usage_date, end_usage_date,
-            project_supervisor_name, supervisor_email
+            phone_number, start_usage_date, end_usage_date
         };
+
+        // Optionally add supervisor info if present
+        if (project_supervisor_name && project_supervisor_name.trim() !== '') {
+            formData.project_supervisor_name = project_supervisor_name;
+        }
+
+        if (supervisor_email && supervisor_email.trim() !== '') {
+            formData.supervisor_email = supervisor_email;
+        }
 
         // Handle item_id_, item_name_, and quantity_ fields dynamically
         Object.keys(req.body).forEach(key => {
